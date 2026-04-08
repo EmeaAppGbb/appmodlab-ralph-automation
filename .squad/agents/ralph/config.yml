@@ -1,0 +1,75 @@
+---
+# Ralph Configuration
+
+# Work schedule - when Ralph should be active
+schedule:
+  active_hours:
+    start: "00:00"
+    end: "23:59"
+  days_of_week: [1, 2, 3, 4, 5, 6, 7]  # All days
+  timezone: "UTC"
+
+# Idle watch settings
+idle_watch:
+  enabled: true
+  threshold_hours: 6  # Start processing after 6 hours of inactivity
+  check_interval: "0 */6 * * *"  # Check every 6 hours
+
+# Task handlers - how Ralph processes different issue types
+task_handlers:
+  dependency-update:
+    priority: high
+    auto_approve: true
+    actions:
+      - npm audit fix
+      - npm update
+      - create-pr
+    
+  bug-fix:
+    priority: medium
+    auto_approve: false
+    actions:
+      - analyze-issue
+      - create-plan
+      - delegate-to: hands
+      - request-review: eyes
+    
+  documentation:
+    priority: medium
+    auto_approve: true
+    actions:
+      - delegate-to: mouth
+      - create-pr
+    
+  performance:
+    priority: medium
+    auto_approve: false
+    actions:
+      - analyze-bottleneck
+      - create-plan
+      - delegate-to: brain
+      - request-review: eyes
+    
+  feature:
+    priority: low
+    auto_approve: false
+    actions:
+      - create-plan
+      - delegate-to: brain
+      - get-human-approval
+    
+  maintenance:
+    priority: low
+    auto_approve: true
+    actions:
+      - execute-task
+      - create-pr
+
+# Autonomous operation settings
+autonomous:
+  max_concurrent_tasks: 3
+  max_prs_per_day: 5
+  require_human_approval_for:
+    - breaking-changes
+    - security-critical
+    - database-migrations

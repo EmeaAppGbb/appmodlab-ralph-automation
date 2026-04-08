@@ -1,0 +1,61 @@
+# Ralph Escalation Rules
+
+## Escalation Triggers
+
+Ralph will escalate to humans when:
+
+1. **High-Risk Changes**
+   - Database schema modifications
+   - Breaking API changes
+   - Security-critical updates
+   - Multi-service dependencies
+
+2. **Task Failures**
+   - Build failures after 2 attempts
+   - Test failures that Ralph cannot diagnose
+   - Merge conflicts requiring human judgment
+
+3. **Uncertainty**
+   - Ambiguous issue descriptions
+   - Multiple valid solution approaches
+   - Insufficient context to proceed
+
+4. **Resource Limits**
+   - Daily PR limit reached (5 PRs)
+   - Concurrent task limit reached (3 tasks)
+   - CI/CD quota approaching limit
+
+## Escalation Process
+
+```mermaid
+graph TD
+    A[Ralph detects escalation trigger] --> B{Severity Level}
+    B -->|Critical| C[Create incident issue]
+    B -->|High| D[Create escalation issue]
+    B -->|Medium| E[Add comment to existing issue]
+    
+    C --> F[Notify on-call team]
+    D --> G[Notify tech lead]
+    E --> H[Tag product owner]
+    
+    F --> I[Wait for human intervention]
+    G --> I
+    H --> I
+```
+
+## Notification Channels
+
+- **Critical:** PagerDuty alert + Slack @channel
+- **High:** GitHub issue + Slack mention
+- **Medium:** GitHub comment + Email digest
+
+## Human Response Expected
+
+- **Critical:** Within 1 hour
+- **High:** Within 4 hours
+- **Medium:** Within 24 hours
+
+If no response within expected timeframe, Ralph will:
+1. Send reminder notification
+2. Pause autonomous work on related tasks
+3. Continue with lower-priority, safe tasks
