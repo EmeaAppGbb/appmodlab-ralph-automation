@@ -1,11 +1,19 @@
 ---
 title: "Ralph Automation"
+description: "Configure Ralph for autonomous backlog processing and continuous development"
+authors: ["marconsilva"]
 category: "Agentic Software Development"
-priority: "P3"
-languages: ["YAML", "GitHub Actions", "TypeScript"]
-duration: "3-4 hours"
-repository: "appmodlab-ralph-automation"
-organization: "EmeaAppGbb"
+industry: "Cross-Industry"
+services: []
+languages: ["TypeScript", "JavaScript"]
+frameworks: ["React", "Express", "PostgreSQL"]
+modernizationTools: []
+agenticTools: ["SQUAD"]
+tags: ["ralph", "automation", "backlog-management", "autonomous-agent", "weather-dashboard"]
+extensions: ["github.copilot"]
+thumbnail: ""
+video: ""
+version: "1.0.0"
 ---
 
 # Ralph Automation
