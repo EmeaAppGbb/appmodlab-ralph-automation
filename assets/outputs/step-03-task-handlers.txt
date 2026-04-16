@@ -1,0 +1,40 @@
+================================================================================
+Step 03: Define Task Handlers
+================================================================================
+
+--- Command: gh copilot -- -p "Create task handler configurations..." ---
+$ gh copilot -- -p "Create detailed task handler configuration files for
+  Ralph in the .squad/agents/ralph/ directory. Create a file called
+  task-handlers.yml that defines how to process each issue type from the
+  docs/BACKLOG.md..." --allow-all-tools --yolo
+
+● Read BACKLOG.md docs\BACKLOG.md → 72 lines
+● Read escalation.yml .squad\agents\ralph\escalation.yml → 61 lines
+● Read config.yml .squad\agents\ralph\config.yml → 177 lines
+● Read team.md .squad\team.md → 19 lines
+● Read routing.md .squad\routing.md → 39 lines
+● Read charter.md .squad\agents\ralph\charter.md → 20 lines
+● Create task-handlers.yml +659 → .squad\agents\ralph\task-handlers.yml
+● Basic YAML validation → No tabs found, 659 lines
+
+Created .squad/agents/ralph/task-handlers.yml (658 lines) with:
+
+6 handler definitions — each with labels, priority, auto-approve policy,
+retry config, branch naming (ralph/<type>/<issue-number>), and PR template:
+
+| Handler            | Auto-Approve | Delegate | Reviewer | Gate           |
+|--------------------|-------------|----------|----------|----------------|
+| dependency-update  | ✅           | —        | —        | —              |
+| bug-fix            | ❌           | Hands    | Eyes     | —              |
+| documentation      | ✅           | Mouth    | —        | —              |
+| performance        | ❌           | Brain    | Eyes     | Arch review    |
+| feature-request    | ❌           | Hands    | Eyes     | Human approval |
+| maintenance        | ✅           | —        | —        | —              |
+
+All 20 backlog items mapped to their handler type, plus a 6-wave
+processing order (security-first → docs → bugs → maintenance →
+performance → features).
+
+Changes: +659 -0
+Requests: 3 Premium (4m 24s)
+Tokens: ⬇ 506.7k • ⬆ 8.0k • 469.7k (cached)

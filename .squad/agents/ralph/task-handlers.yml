@@ -1,0 +1,658 @@
+---
+# Ralph Task Handlers — Detailed Configuration
+# Defines processing rules for each issue type in the WeatherLens backlog.
+# Referenced by: .squad/agents/ralph/config.yml (task_handlers section)
+# Backlog source: docs/BACKLOG.md
+
+# ════════════════════════════════════════════════
+# Handler Definitions
+# ════════════════════════════════════════════════
+
+handlers:
+
+  # ──────────────────────────────────────────────
+  # 1. Dependency Updates
+  # ──────────────────────────────────────────────
+  dependency-update:
+    description: >
+      Automated dependency bumps and security patches. Ralph executes
+      the full update cycle autonomously — audit, update, test, PR.
+      No human review required.
+    labels:
+      match_any: ["dependencies", "security", "dependabot"]
+    priority: P1-high
+    auto_approve: true
+    review_policy: none
+
+    branch_naming: "ralph/dependency-update/{issue_number}"
+
+    actions:
+      - name: audit-fix
+        command: "npm audit fix"
+        continue_on_failure: false
+      - name: update-packages
+        command: "npm update"
+        continue_on_failure: false
+      - name: run-tests
+        command: "npm test"
+        continue_on_failure: false
+      - name: create-pr
+        auto_merge: true
+
+    retry:
+      max_attempts: 2
+      backoff_minutes: 15
+      on_failure: escalate
+
+    pr_template: |
+      ## 📦 Dependency Update — #{issue_number}
+
+      **Type:** Automated dependency update
+      **Handler:** `dependency-update` (auto-approved)
+      **Branch:** `ralph/dependency-update/{issue_number}`
+
+      ### Changes
+      - Ran `npm audit fix` to resolve known vulnerabilities
+      - Ran `npm update` to bump packages to latest compatible versions
+      - All tests pass ✅
+
+      ### Audit Summary
+      ```
+      {audit_output}
+      ```
+
+      ### Test Results
+      ```
+      {test_output}
+      ```
+
+      ---
+      🤖 *Automated by Ralph — no human review required*
+      Closes #{issue_number}
+
+  # ──────────────────────────────────────────────
+  # 2. Bug Fixes
+  # ──────────────────────────────────────────────
+  bug-fix:
+    description: >
+      Bug triage, reproduction, and fix. Delegated to Hands agent for
+      implementation. Requires code review from Eyes agent before merge.
+    labels:
+      match_any: ["bug", "defect", "regression"]
+    priority: P1-high
+    auto_approve: false
+    review_policy: required
+    delegate_to: hands
+    reviewers:
+      - eyes
+
+    branch_naming: "ralph/bug-fix/{issue_number}"
+
+    actions:
+      - name: analyze-issue
+        description: "Parse issue, identify affected components"
+      - name: reproduce-bug
+        description: "Create minimal reproduction case"
+      - name: create-plan
+        description: "Draft fix approach for review"
+      - name: implement-fix
+        delegate_to: hands
+        description: "Hands agent implements the code change"
+      - name: run-tests
+        command: "npm test"
+        continue_on_failure: false
+      - name: create-pr
+        auto_merge: false
+      - name: request-review
+        reviewer: eyes
+        description: "Eyes agent reviews code quality and correctness"
+
+    retry:
+      max_attempts: 2
+      backoff_minutes: 30
+      on_failure: escalate
+
+    pr_template: |
+      ## 🐛 Bug Fix — #{issue_number}
+
+      **Type:** Bug fix
+      **Handler:** `bug-fix` (requires review)
+      **Branch:** `ralph/bug-fix/{issue_number}`
+      **Implemented by:** 🤚 Hands agent
+      **Review required from:** 👁️ Eyes agent
+
+      ### Problem
+      {issue_description}
+
+      ### Root Cause
+      {root_cause_analysis}
+
+      ### Fix
+      {fix_description}
+
+      ### Test Results
+      ```
+      {test_output}
+      ```
+
+      ### Review Checklist
+      - [ ] Root cause correctly identified
+      - [ ] Fix addresses the root cause (not just symptoms)
+      - [ ] No regressions introduced
+      - [ ] Edge cases covered by tests
+
+      ---
+      🤖 *Triaged by Ralph, implemented by Hands, awaiting Eyes review*
+      Closes #{issue_number}
+
+  # ──────────────────────────────────────────────
+  # 3. Documentation
+  # ──────────────────────────────────────────────
+  documentation:
+    description: >
+      Documentation updates — API docs, guides, changelogs. Delegated
+      to Mouth agent for content drafting. Auto-approved.
+    labels:
+      match_any: ["documentation", "docs", "readme"]
+    priority: P2-medium
+    auto_approve: true
+    review_policy: none
+    delegate_to: mouth
+
+    branch_naming: "ralph/documentation/{issue_number}"
+
+    actions:
+      - name: analyze-docs-gap
+        description: "Identify what documentation is missing or outdated"
+      - name: draft-content
+        delegate_to: mouth
+        description: "Mouth agent drafts the documentation"
+      - name: lint-docs
+        command: "npx markdownlint-cli2 '**/*.md'"
+        continue_on_failure: true
+      - name: create-pr
+        auto_merge: true
+
+    retry:
+      max_attempts: 1
+      backoff_minutes: 10
+      on_failure: escalate
+
+    pr_template: |
+      ## 📝 Documentation — #{issue_number}
+
+      **Type:** Documentation update
+      **Handler:** `documentation` (auto-approved)
+      **Branch:** `ralph/documentation/{issue_number}`
+      **Drafted by:** 🗣️ Mouth agent
+
+      ### Summary
+      {doc_summary}
+
+      ### Files Changed
+      {files_changed}
+
+      ---
+      🤖 *Automated by Ralph, content by Mouth — no human review required*
+      Closes #{issue_number}
+
+  # ──────────────────────────────────────────────
+  # 4. Performance
+  # ──────────────────────────────────────────────
+  performance:
+    description: >
+      Performance optimizations — bundle size, caching, latency. Requires
+      architecture review from Brain agent before implementation begins.
+    labels:
+      match_any: ["performance", "optimization", "slow"]
+    priority: P2-medium
+    auto_approve: false
+    review_policy: architecture-review
+    delegate_to: brain
+    reviewers:
+      - brain   # Architecture review (pre-implementation)
+      - eyes    # Code review (post-implementation)
+
+    branch_naming: "ralph/performance/{issue_number}"
+
+    actions:
+      - name: analyze-bottleneck
+        description: "Profile and identify performance bottleneck"
+      - name: collect-metrics
+        description: "Capture baseline performance metrics"
+      - name: create-plan
+        description: "Draft optimization approach"
+      - name: request-architecture-review
+        reviewer: brain
+        blocking: true
+        description: "Brain agent must approve approach before implementation"
+      - name: implement-optimization
+        delegate_to: hands
+        description: "Hands agent implements the approved optimization"
+      - name: run-benchmarks
+        description: "Measure performance improvement against baseline"
+      - name: run-tests
+        command: "npm test"
+        continue_on_failure: false
+      - name: create-pr
+        auto_merge: false
+      - name: request-review
+        reviewer: eyes
+
+    retry:
+      max_attempts: 2
+      backoff_minutes: 60
+      on_failure: escalate
+
+    pr_template: |
+      ## ⚡ Performance Optimization — #{issue_number}
+
+      **Type:** Performance improvement
+      **Handler:** `performance` (architecture review required)
+      **Branch:** `ralph/performance/{issue_number}`
+      **Architecture review:** 🧠 Brain agent
+      **Code review:** 👁️ Eyes agent
+
+      ### Problem
+      {issue_description}
+
+      ### Baseline Metrics
+      ```
+      {baseline_metrics}
+      ```
+
+      ### Approach (approved by Brain)
+      {architecture_plan}
+
+      ### Results
+      ```
+      Before: {metric_before}
+      After:  {metric_after}
+      Improvement: {improvement_pct}%
+      ```
+
+      ### Review Checklist
+      - [ ] Architecture approach approved by Brain
+      - [ ] No correctness regressions
+      - [ ] Benchmarks show measurable improvement
+      - [ ] No new memory leaks or resource issues
+
+      ---
+      🤖 *Triaged by Ralph, reviewed by Brain, awaiting Eyes review*
+      Closes #{issue_number}
+
+  # ──────────────────────────────────────────────
+  # 5. Feature Requests
+  # ──────────────────────────────────────────────
+  feature-request:
+    description: >
+      New feature requests. Requires explicit human product decision
+      before any implementation work begins. Ralph triages and presents
+      options but does NOT start coding until approved.
+    labels:
+      match_any: ["enhancement", "feature", "feature-request"]
+    priority: P3-low
+    auto_approve: false
+    review_policy: human-approval
+    human_gate: true
+
+    branch_naming: "ralph/feature-request/{issue_number}"
+
+    actions:
+      - name: analyze-request
+        description: "Parse feature request, identify scope and impact"
+      - name: create-plan
+        description: "Draft implementation plan with effort estimate"
+      - name: request-human-approval
+        blocking: true
+        description: >
+          Blocks until a human approves the plan. Ralph comments on the
+          issue with a summary and waits for a thumbs-up or explicit
+          approval comment.
+        approval_mechanism: "issue-comment"
+        approval_labels: ["approved", "product-approved"]
+      - name: delegate-implementation
+        delegate_to: hands
+        description: "Hands agent implements the approved feature"
+      - name: run-tests
+        command: "npm test"
+        continue_on_failure: false
+      - name: create-pr
+        auto_merge: false
+      - name: request-review
+        reviewer: eyes
+
+    retry:
+      max_attempts: 1
+      backoff_minutes: 120
+      on_failure: escalate
+
+    pr_template: |
+      ## ✨ Feature — #{issue_number}
+
+      **Type:** New feature
+      **Handler:** `feature-request` (human-approved)
+      **Branch:** `ralph/feature-request/{issue_number}`
+      **Product approval:** ✅ Approved by {approver}
+      **Code review:** 👁️ Eyes agent
+
+      ### Feature Description
+      {issue_description}
+
+      ### Implementation Plan (approved)
+      {implementation_plan}
+
+      ### Changes
+      {changes_summary}
+
+      ### Test Results
+      ```
+      {test_output}
+      ```
+
+      ### Review Checklist
+      - [ ] Matches approved product requirements
+      - [ ] UX consistent with existing patterns
+      - [ ] Tests cover happy path and edge cases
+      - [ ] No performance regressions
+
+      ---
+      🤖 *Triaged by Ralph, approved by product owner, implemented by Hands*
+      Closes #{issue_number}
+
+  # ──────────────────────────────────────────────
+  # 6. Maintenance
+  # ──────────────────────────────────────────────
+  maintenance:
+    description: >
+      Routine housekeeping — linting config, CI tuning, formatting,
+      test coverage. Auto-approved for straightforward tasks.
+    labels:
+      match_any: ["maintenance", "chore", "housekeeping", "ci"]
+    priority: P3-low
+    auto_approve: true
+    review_policy: none
+
+    branch_naming: "ralph/maintenance/{issue_number}"
+
+    escalation_overrides:
+      # Some maintenance tasks are complex enough to need review
+      requires_review_if:
+        - files_changed: "> 15"
+        - lines_changed: "> 300"
+        - touches_ci: true
+
+    actions:
+      - name: execute-task
+        description: "Run the maintenance task directly"
+      - name: run-tests
+        command: "npm test"
+        continue_on_failure: false
+      - name: create-pr
+        auto_merge: true
+
+    retry:
+      max_attempts: 2
+      backoff_minutes: 15
+      on_failure: escalate
+
+    pr_template: |
+      ## 🔧 Maintenance — #{issue_number}
+
+      **Type:** Routine maintenance
+      **Handler:** `maintenance` (auto-approved)
+      **Branch:** `ralph/maintenance/{issue_number}`
+
+      ### Summary
+      {task_summary}
+
+      ### Changes
+      {changes_summary}
+
+      ### Test Results
+      ```
+      {test_output}
+      ```
+
+      ---
+      🤖 *Automated by Ralph — routine maintenance, no human review required*
+      Closes #{issue_number}
+
+
+# ════════════════════════════════════════════════
+# Backlog Item Mapping
+# ════════════════════════════════════════════════
+# Maps each issue from docs/BACKLOG.md to its handler type.
+
+backlog_mapping:
+
+  # ── P1 High Priority: Dependency Updates ──
+  - issue: 1
+    title: "Update React to 18.3.x (security patch)"
+    handler: dependency-update
+    branch: "ralph/dependency-update/1"
+    priority: P1-high
+    notes: "Security patch — process immediately"
+
+  - issue: 2
+    title: "Update Axios to 1.7.x (CVE-2024-xxxxx)"
+    handler: dependency-update
+    branch: "ralph/dependency-update/2"
+    priority: P1-high
+    notes: "Active CVE — highest urgency"
+
+  - issue: 3
+    title: "Update TypeScript to 5.7.x"
+    handler: dependency-update
+    branch: "ralph/dependency-update/3"
+    priority: P1-high
+    notes: "Major version bump — run full test suite"
+
+  - issue: 4
+    title: "Update Vite to 6.x"
+    handler: dependency-update
+    branch: "ralph/dependency-update/4"
+    priority: P1-high
+    notes: "Major version — check build output for breaking changes"
+
+  - issue: 5
+    title: "Update ESLint to 9.x"
+    handler: dependency-update
+    branch: "ralph/dependency-update/5"
+    priority: P1-high
+    notes: "ESLint 9 flat config migration may be needed"
+
+  # ── P2 Medium Priority: Bug Fixes ──
+  - issue: 6
+    title: "Timezone display shows incorrect offset for some cities"
+    handler: bug-fix
+    branch: "ralph/bug-fix/6"
+    priority: P1-high
+    delegate_to: hands
+    reviewer: eyes
+    notes: "Likely date-fns or Intl API issue"
+
+  - issue: 7
+    title: "API error handling doesn't catch network timeouts"
+    handler: bug-fix
+    branch: "ralph/bug-fix/7"
+    priority: P1-high
+    delegate_to: hands
+    reviewer: eyes
+    notes: "Check Axios interceptors and timeout config"
+
+  - issue: 8
+    title: "Cache invalidation not working for favorite locations"
+    handler: bug-fix
+    branch: "ralph/bug-fix/8"
+    priority: P1-high
+    delegate_to: hands
+    reviewer: eyes
+    notes: "Complex — cache logic may need architectural review. Escalate if scope unclear."
+    escalation_risk: high
+
+  # ── P2 Medium Priority: Documentation ──
+  - issue: 9
+    title: "Add API documentation for weather endpoints"
+    handler: documentation
+    branch: "ralph/documentation/9"
+    priority: P2-medium
+    delegate_to: mouth
+    notes: "Generate from existing route definitions"
+
+  - issue: 10
+    title: "Create setup guide in README"
+    handler: documentation
+    branch: "ralph/documentation/10"
+    priority: P2-medium
+    delegate_to: mouth
+    notes: "Include Docker and local dev setup"
+
+  - issue: 11
+    title: "Write contributing guidelines"
+    handler: documentation
+    branch: "ralph/documentation/11"
+    priority: P2-medium
+    delegate_to: mouth
+    notes: "Standard CONTRIBUTING.md with PR checklist"
+
+  - issue: 12
+    title: "Generate changelog from commits"
+    handler: documentation
+    branch: "ralph/documentation/12"
+    priority: P2-medium
+    delegate_to: mouth
+    notes: "Use conventional commits format"
+
+  # ── P3 Low Priority: Performance ──
+  - issue: 13
+    title: "Optimize bundle size (currently 450KB, target 300KB)"
+    handler: performance
+    branch: "ralph/performance/13"
+    priority: P2-medium
+    delegate_to: brain
+    reviewer: eyes
+    notes: "Needs tree-shaking analysis and code-splitting plan"
+
+  - issue: 14
+    title: "Implement API response caching (Redis)"
+    handler: performance
+    branch: "ralph/performance/14"
+    priority: P2-medium
+    delegate_to: brain
+    reviewer: eyes
+    notes: "Requires infrastructure decision — Redis vs in-memory"
+    escalation_risk: medium
+
+  # ── P3 Low Priority: Features ──
+  - issue: 15
+    title: "Add dark mode support"
+    handler: feature-request
+    branch: "ralph/feature-request/15"
+    priority: P3-low
+    human_gate: true
+    notes: "Needs UX/product decision on theme approach"
+
+  - issue: 16
+    title: "Allow switching between Celsius/Fahrenheit"
+    handler: feature-request
+    branch: "ralph/feature-request/16"
+    priority: P3-low
+    human_gate: true
+    notes: "Needs product sign-off on unit preference UX"
+
+  - issue: 17
+    title: "Save favorite locations to user preferences"
+    handler: feature-request
+    branch: "ralph/feature-request/17"
+    priority: P3-low
+    human_gate: true
+    notes: "Needs product decision on persistence strategy (local vs server)"
+
+  # ── P3 Low Priority: Maintenance ──
+  - issue: 18
+    title: "Update linting configuration for TypeScript 5.x"
+    handler: maintenance
+    branch: "ralph/maintenance/18"
+    priority: P3-low
+    notes: "Depends on #3 (TypeScript update) completing first"
+    depends_on: [3]
+
+  - issue: 19
+    title: "Improve test coverage (currently 45%, target 70%)"
+    handler: maintenance
+    branch: "ralph/maintenance/19"
+    priority: P3-low
+    notes: "Complex — escalate to human for test case priorities"
+    escalation_risk: medium
+
+  - issue: 20
+    title: "Optimize CI pipeline (reduce build time from 5min to 3min)"
+    handler: maintenance
+    branch: "ralph/maintenance/20"
+    priority: P3-low
+    notes: "Analyze pipeline stages, enable caching"
+
+
+# ════════════════════════════════════════════════
+# Processing Order
+# ════════════════════════════════════════════════
+# Recommended execution sequence based on priority and dependencies.
+
+processing_order:
+  # Wave 1: Security-critical dependency updates (autonomous)
+  - wave: 1
+    label: "Security & dependency updates"
+    issues: [2, 1, 3, 4, 5]
+    strategy: sequential
+    rationale: "Address CVEs and security patches first"
+
+  # Wave 2: Documentation (autonomous, can run in parallel)
+  - wave: 2
+    label: "Documentation"
+    issues: [10, 11, 9, 12]
+    strategy: parallel
+    rationale: "Low-risk, auto-approved — maximize throughput"
+
+  # Wave 3: Bug fixes (needs delegation and review)
+  - wave: 3
+    label: "Bug fixes"
+    issues: [7, 6, 8]
+    strategy: sequential
+    rationale: "#8 may need escalation — process simpler bugs first"
+
+  # Wave 4: Maintenance (after dependencies are updated)
+  - wave: 4
+    label: "Maintenance"
+    issues: [18, 20, 19]
+    strategy: sequential
+    rationale: "#18 depends on #3; #19 needs human input"
+
+  # Wave 5: Performance (needs architecture review)
+  - wave: 5
+    label: "Performance"
+    issues: [13, 14]
+    strategy: sequential
+    rationale: "Both need Brain review before implementation"
+
+  # Wave 6: Features (blocked on human decisions)
+  - wave: 6
+    label: "Features (human-gated)"
+    issues: [15, 16, 17]
+    strategy: on-demand
+    rationale: "Cannot start until product owner approves"
+
+
+# ════════════════════════════════════════════════
+# Handler Summary
+# ════════════════════════════════════════════════
+#
+#  Handler            | Issues     | Auto-Approve | Delegate | Reviewer | Gate
+#  -------------------|------------|--------------|----------|----------|------------
+#  dependency-update  | #1–#5      | ✅ yes       | —        | —        | —
+#  bug-fix            | #6–#8      | ❌ no        | Hands    | Eyes     | —
+#  documentation      | #9–#12     | ✅ yes       | Mouth    | —        | —
+#  performance        | #13–#14    | ❌ no        | Brain    | Eyes     | Arch review
+#  feature-request    | #15–#17    | ❌ no        | Hands    | Eyes     | Human approval
+#  maintenance        | #18–#20    | ✅ yes       | —        | —        | —
+#
