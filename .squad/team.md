@@ -12,6 +12,11 @@
 
 | Name | Role | Charter | Status |
 |------|------|---------|--------|
+| Ralph | Coordinator / Autonomous Worker | [charter](.squad/agents/ralph/charter.md) | Active |
+| Hands | Implementation | — | Available |
+| Eyes | Code Review | — | Available |
+| Mouth | Documentation | — | Available |
+| Brain | Architecture | — | Available |
 
 ## Project Context
 

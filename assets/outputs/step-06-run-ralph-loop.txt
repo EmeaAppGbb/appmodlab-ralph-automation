@@ -1,0 +1,44 @@
+================================================================================
+Step 06: Run Ralph Loop
+================================================================================
+
+--- Command: npx @bradygaster/squad-cli triage ---
+$ npx @bradygaster/squad-cli triage
+
+🔄 Ralph — Watch Mode
+Polling every 10 minute(s) for squad work. Ctrl+C to stop.
+📋 Board is clear — Ralph is idling
+
+(Ralph enters watch mode, polling every 10 minutes for GitHub issues
+assigned to squad members. Board is clear because no GitHub issues
+are currently open/assigned.)
+
+--- Command: npx @bradygaster/squad-cli loop ---
+$ npx @bradygaster/squad-cli loop
+
+🔄 Squad loop starting... (full implementation pending)
+   Interval: 10 minutes
+
+--- Command: npx @bradygaster/squad-cli status ---
+$ npx @bradygaster/squad-cli status
+
+Squad Status
+  Active squad: repo
+  Path:         C:\code\gbb\labs\appmodlab-ralph-automation\.squad
+  Reason:       Found .squad/ in repository tree
+  Repo resolution:   C:\code\gbb\labs\appmodlab-ralph-automation\.squad
+
+--- Ralph Triage Summary ---
+Ralph successfully initialized in watch mode and scanned for work.
+The backlog items in docs/BACKLOG.md would need to be created as
+GitHub Issues with appropriate labels for Ralph to pick them up
+during triage. Ralph's idle-watch configuration would trigger
+processing after 6 hours of pipeline inactivity.
+
+Processing order (from task-handlers.yml):
+  Wave 1: Security/Dependency updates (#1-5) - auto-approve
+  Wave 2: Documentation (#9-12) - delegate to Mouth
+  Wave 3: Bug fixes (#6-8) - delegate to Hands, review by Eyes
+  Wave 4: Maintenance (#18-20) - auto-approve
+  Wave 5: Performance (#13-14) - architecture review by Brain
+  Wave 6: Features (#15-17) - human approval required
