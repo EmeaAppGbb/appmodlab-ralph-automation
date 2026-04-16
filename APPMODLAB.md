@@ -72,201 +72,329 @@ The backend exposes a health endpoint confirming API server status:
 
 ---
 
-## Lab Instructions
+## Lab Instructions (CLI Walkthrough)
 
-### Step 1: Review Backlog
+> **Tools Used:** [Squad CLI](https://www.npmjs.com/package/@bradygaster/squad-cli) (`npx @bradygaster/squad-cli`) and [GitHub Copilot CLI](https://docs.github.com/copilot) (`gh copilot`).
+>
+> All code changes below are performed by the CLI tools, not manually. The `solution-final` branch and tags contain the complete results.
 
-**Objective:** Examine the 20+ pre-loaded issues and understand task types.
+---
 
-1. Review the backlog at `docs/BACKLOG.md`:
-   - 5 dependency updates (high priority)
-   - 3 bug fixes (medium priority)
-   - 4 documentation tasks (medium priority)
-   - 2 performance optimizations (low priority)
-   - 3 feature requests (low priority)
-   - 3 maintenance tasks (low priority)
+### Step 1: Review Backlog & Run App
 
-2. Identify which tasks Ralph can handle autonomously:
-   - ✅ Dependency updates - Safe, automated
-   - ✅ Documentation - Delegate to Mouth
-   - ⚠️ Bug fixes - Some need human review
-   - ❌ Features - Require product decisions
-   - ⚠️ Performance - Need architecture review
+**Objective:** Run the WeatherLens app and examine the 20 backlog items.
 
-### Step 2: Configure Work Schedules
+```powershell
+# Install and start backend
+cd backend && npm install && npm run dev
+# Output: WeatherLens API running on port 3000
 
-**Objective:** Define when Ralph should be active.
+# Install and start frontend (new terminal)
+cd frontend && npm install && npm run dev
+# Output: VITE v6.4.2 ready — http://localhost:5199/
+```
 
-1. Review Ralph's configuration at `.squad/agents/ralph/config.yml`
+Review `docs/BACKLOG.md` — 20 issues across 6 categories:
 
-2. Work schedule settings:
-   ```yaml
-   schedule:
-     active_hours:
-       start: "00:00"
-       end: "23:59"
-     days_of_week: [1, 2, 3, 4, 5, 6, 7]
-     timezone: "UTC"
-   ```
+| Category           | Issues | Priority | Ralph Can Handle? |
+|--------------------|--------|----------|-------------------|
+| Dependency updates | #1–5   | High     | ✅ Autonomous      |
+| Bug fixes          | #6–8   | Medium   | ⚠️ Needs review    |
+| Documentation      | #9–12  | Medium   | ✅ Delegate to Mouth |
+| Performance        | #13–14 | Low      | ⚠️ Architecture review |
+| Features           | #15–17 | Low      | ❌ Human required  |
+| Maintenance        | #18–20 | Low      | ✅ Autonomous      |
 
-3. Adjust for your team's working hours if needed
+```powershell
+git add -A && git commit -m "Step 01: Review backlog and run app"
+git tag step-01-review-backlog
+```
+
+---
+
+### Step 2: Initialize Squad & Configure Ralph
+
+**Objective:** Scaffold the Squad workspace and enhance Ralph's config.
+
+```powershell
+# Initialize Squad on this repo
+npx @bradygaster/squad-cli init
+```
+
+**Output:**
+```
+✓ .squad\config.json
+✓ .squad\agents\scribe\charter.md
+✓ .squad\agents\ralph\charter.md
+✓ .squad\identity\now.md
+✓ .squad\identity\wisdom.md
+✓ .squad\ceremonies.md
+✓ .github\agents\squad.agent.md
+✓ .github\workflows\squad-heartbeat.yml
+✓ .github\workflows\squad-issue-assign.yml
+✓ .github\workflows\squad-triage.yml
+✓ .copilot\mcp-config.json
+✓ .copilot/skills (30+ skills installed)
+
+◆ SQUAD — Your team is ready. Run squad to start.
+```
+
+```powershell
+# Configure Ralph for 24/7 autonomous monitoring
+gh copilot -- -p "Configure Ralph for autonomous work monitoring on this \
+  WeatherLens project. Enhance .squad/agents/ralph/config.yml with: \
+  1) work schedules set to 24/7 UTC, \
+  2) idle-watch with 6-hour threshold, \
+  3) task handlers for dependency updates (auto-approve), bug fixes \
+     (needs review, delegate to hands), documentation (delegate to mouth), \
+     performance (architecture review, delegate to brain), feature requests \
+     (human approval), maintenance (auto-approve), \
+  4) max concurrent tasks=3, max PRs/day=5." \
+  --allow-all-tools --yolo
+```
+
+**Result:** Enhanced `config.yml` (+120 lines) with 6 sections:
+- Schedule: 24/7 UTC mode
+- Idle Watch: 6h threshold, `0 */6 * * *` cron
+- Task Handlers: 6 types with descriptions, labels, review policies, retry settings
+- Limits: 3 concurrent tasks, 5 PRs/day, 10-min cooldown
+- Safety: `ralph/` branch prefix, protected branches, forbidden paths
+- Notifications: PR created, escalation, failure, daily summary
+
+```powershell
+git tag step-02-configure-ralph
+```
+
+---
 
 ### Step 3: Define Task Handlers
 
-**Objective:** Configure how Ralph handles each issue type.
+**Objective:** Create detailed task handler definitions with backlog mapping.
 
-1. Review task handlers in `config.yml`:
-
-```yaml
-task_handlers:
-  dependency-update:
-    priority: high
-    auto_approve: true
-    actions:
-      - npm audit fix
-      - npm update
-      - create-pr
-    
-  bug-fix:
-    priority: medium
-    auto_approve: false  # Requires review
-    actions:
-      - analyze-issue
-      - create-plan
-      - delegate-to: hands
-      - request-review: eyes
-    
-  documentation:
-    priority: medium
-    auto_approve: true
-    actions:
-      - delegate-to: mouth
-      - create-pr
+```powershell
+gh copilot -- -p "Create task handler configurations for Ralph in \
+  .squad/agents/ralph/task-handlers.yml. Define how to process each \
+  issue type: dependency-update (auto-approve), bug-fix (delegate to \
+  Hands, review by Eyes), documentation (delegate to Mouth), performance \
+  (architecture review by Brain), feature-request (human approval gate), \
+  maintenance (auto-approve). Map all 20 backlog items to handlers. \
+  Include branch naming (ralph/<type>/<issue>), PR templates, retry \
+  policies, and a 6-wave processing order." \
+  --allow-all-tools --yolo
 ```
 
-2. Each handler specifies:
-   - **Priority** - How urgently to process
-   - **Auto-approve** - Can Ralph merge without human review
-   - **Actions** - Steps to take
+**Result:** Created `task-handlers.yml` (659 lines) with:
+
+| Handler           | Auto-Approve | Delegate | Reviewer | Gate           |
+|-------------------|-------------|----------|----------|----------------|
+| dependency-update | ✅           | —        | —        | —              |
+| bug-fix           | ❌           | Hands    | Eyes     | —              |
+| documentation     | ✅           | Mouth    | —        | —              |
+| performance       | ❌           | Brain    | Eyes     | Arch review    |
+| feature-request   | ❌           | Hands    | Eyes     | Human approval |
+| maintenance       | ✅           | —        | —        | —              |
+
+6-wave processing order: Security → Docs → Bugs → Maintenance → Performance → Features
+
+```powershell
+git tag step-03-task-handlers
+```
+
+---
 
 ### Step 4: Set Up Idle-Watch
 
-**Objective:** Configure triggers for auto-start when pipeline is idle.
+**Objective:** Configure auto-start when pipeline is idle for 6+ hours.
 
-1. Idle-watch configuration:
-   ```yaml
-   idle_watch:
-     enabled: true
-     threshold_hours: 6
-     check_interval: "0 */6 * * *"
-   ```
+```powershell
+gh copilot -- -p "Configure Ralph idle-watch in \
+  .squad/agents/ralph/idle-watch.yml. Define: \
+  1) idle detection after 6h of inactivity, \
+  2) check interval cron '0 */6 * * *', \
+  3) notification via GitHub issue comments with work plan summary, \
+  4) escalation after 24h unattended, \
+  5) activity sources (commits, PRs, issues, deployments), \
+  6) 2-hour cool-down after each run." \
+  --allow-all-tools --yolo
+```
 
-2. Ralph checks pipeline activity every 6 hours
-3. If no commits for 6+ hours, Ralph starts processing backlog
-4. Prevents pipeline from staying idle when work is available
+**Result:** Created `idle-watch.yml` (193 lines) with:
+- Idle detection: 6h threshold across all activity sources
+- Check interval: Every 6 hours UTC (00:00, 06:00, 12:00, 18:00)
+- Notifications: GitHub issue comments with Jinja templates
+- Escalation: Summary issue after 24h unattended
+- Cool-down: 2-hour pause between runs
 
-### Step 5: Configure Escalation
+```powershell
+git tag step-04-idle-watch
+```
 
-**Objective:** Define when Ralph should notify humans.
+---
 
-1. Review escalation rules at `.squad/agents/ralph/escalation.yml`
+### Step 5: Set Up Escalation Rules
 
-2. Ralph escalates when:
-   - High-risk changes (database, breaking API)
-   - Task failures after 2 attempts
-   - Ambiguous requirements
-   - Daily limits reached
+**Objective:** Convert escalation rules to structured YAML with severity levels.
 
-3. Escalation process:
-   ```
-   Ralph detects trigger
-   → Assess severity (Critical/High/Medium)
-   → Create issue or comment
-   → Notify appropriate team (on-call/tech lead/PO)
-   → Wait for human response
-   → Continue with other safe tasks
-   ```
+```powershell
+gh copilot -- -p "Enhance .squad/agents/ralph/escalation.yml. Convert \
+  from markdown to proper YAML with: \
+  1) severity levels (critical/high/medium/low) with specific triggers, \
+  2) WeatherLens mappings: DB=critical, API breaking=critical, \
+     security=high, build failures after 2 retries=high, \
+     ambiguous reqs=medium, large diffs=medium, features=low, \
+  3) notification channels per severity, \
+  4) response timeouts: 1h/4h/24h/72h, \
+  5) auto-actions on timeout: reminder→pause→escalate, \
+  6) backlog references: #8, #13-17, #19." \
+  --allow-all-tools --yolo
+```
 
-### Step 6: Enable Ralph
+**Result:** Converted `escalation.yml` (+193 -48 lines) with:
+- 4 severity levels with parseable trigger conditions
+- Notification channels: critical→issue+@team, high→issue+assignee, medium→PR comment, low→label
+- Response timeouts: 1h / 4h / 24h / 72h
+- 3 ordered timeout auto-actions
+- Backlog cross-reference mapping #8, #13–17, #19
 
-**Objective:** Start Ralph and observe initial backlog processing.
+```powershell
+git tag step-05-escalation-rules
+```
 
-1. The Ralph workflow runs automatically:
-   - Every 6 hours (scheduled)
-   - On issue creation/labeling (event-triggered)
-   - Manual trigger via workflow_dispatch
+---
 
-2. Trigger Ralph manually:
-   - GitHub → Actions → Ralph Automation → Run workflow
+### Step 6: Run Ralph Loop
 
-3. Ralph will:
-   - Check idle time
-   - Select tasks from backlog
-   - Process based on task handlers
-   - Create PRs for completed work
+**Objective:** Start Ralph and observe backlog scanning.
 
-### Step 7: Monitor Activity
+```powershell
+# Add team members to .squad/team.md first
+gh copilot -- -p "Add Ralph, Hands, Eyes, Mouth, Brain as squad members \
+  in .squad/team.md with appropriate roles and statuses." \
+  --allow-all-tools --yolo
 
-**Objective:** Review Ralph's activity log and PR creation.
+# Run Ralph triage (watch mode)
+npx @bradygaster/squad-cli triage
+```
 
-1. Check Ralph's activity log: `.squad/agents/ralph/history.md`
+**Output:**
+```
+🔄 Ralph — Watch Mode
+Polling every 10 minute(s) for squad work. Ctrl+C to stop.
+📋 Board is clear — Ralph is idling
+```
 
-2. Review created PRs:
-   - Dependency updates
-   - Documentation improvements
-   - Bug fixes
+```powershell
+# Run Ralph loop
+npx @bradygaster/squad-cli loop
+```
 
-3. Observe Ralph's decision-making:
-   - Which tasks were processed autonomously
-   - Which were escalated
-   - Reasons for each decision
+**Output:**
+```
+🔄 Squad loop starting... (full implementation pending)
+   Interval: 10 minutes
+```
 
-### Step 8: Handle Escalations
+Ralph enters watch mode and polls for GitHub issues. The board is clear until backlog items are created as GitHub Issues with labels matching the task handlers.
 
-**Objective:** Respond to Ralph's escalation notifications.
+```powershell
+git tag step-06-run-ralph-loop
+```
 
-1. Ralph creates escalation issues for:
-   - Feature requests (#15-17) - Need product input
-   - Performance tasks (#13-14) - Need architecture review
-   - Complex bugs (#8) - Need careful analysis
+---
 
-2. Review escalation issue and:
-   - Provide additional context
-   - Make necessary decisions
-   - Approve or modify Ralph's suggested approach
+### Step 7: Activity Logging & Monitoring
 
-3. Ralph resumes work after receiving guidance
+**Objective:** Check Ralph's status, token usage, and system health.
 
-### Step 9: Review Results
+```powershell
+# Check token usage
+npx @bradygaster/squad-cli cost
+```
 
-**Objective:** Assess quality of Ralph's autonomous work.
+**Output:**
+```
+💰 No token usage data found in orchestration logs.
+   Token tracking is recorded when agents report usage in their responses.
+```
 
-1. Metrics to evaluate:
-   - **Success rate:** PRs merged / PRs created
-   - **Quality:** Issues actually resolved
-   - **Escalation accuracy:** Did Ralph correctly identify high-risk items?
-   - **Time savings:** Hours saved vs manual processing
+```powershell
+# Check squad status
+npx @bradygaster/squad-cli status
+```
 
-2. Sample success criteria:
-   - ✅ 5+ backlog items processed
-   - ✅ 3+ PRs merged
-   - ✅ Proper escalation for high-risk items
-   - ✅ No broken builds from Ralph's PRs
+**Output:**
+```
+Squad Status
+  Active squad: repo
+  Path:         .squad
+  Reason:       Found .squad/ in repository tree
+```
 
-### Step 10: Tune Configuration
+```powershell
+# Run health check
+npx @bradygaster/squad-cli doctor
+```
 
-**Objective:** Adjust based on results.
+**Output:**
+```
+🩺 Squad Doctor
+═══════════════
+✅  .squad/ directory exists
+✅  config.json valid — parses as JSON, schema OK
+✅  team.md found with ## Members header
+✅  routing.md found
+✅  agents/ directory exists (2 agents)
+❌  casting/registry.json exists — file not found
+✅  decisions.md exists
+✅  Node.js ≥22.5.0 — node:sqlite available
 
-1. If Ralph is too conservative:
-   - Increase auto_approve for more task types
-   - Reduce escalation triggers
+Summary: 7 passed, 1 failed, 2 warnings
+```
 
-2. If Ralph is too aggressive:
-   - Decrease auto_approve
-   - Add more escalation triggers
-   - Reduce daily PR limit
+```powershell
+# Create monitoring guide
+gh copilot -- -p "Create a monitoring guide at \
+  .squad/agents/ralph/monitoring.md covering daily/weekly checklists, \
+  CLI commands, and health check interpretation." \
+  --allow-all-tools --yolo
 
-3. Iterate on task handlers based on outcomes
+git tag step-07-activity-logging
+```
+
+---
+
+### Step 8: Retrospective
+
+**Objective:** Review Ralph's configuration and generate readiness summary.
+
+```powershell
+gh copilot -- -p "Generate a retrospective summary at \
+  .squad/agents/ralph/retrospective.md. Review all Ralph config files \
+  and docs/BACKLOG.md. Include: what was configured, readiness assessment, \
+  risk analysis, metrics baseline, next steps, lessons learned." \
+  --allow-all-tools --yolo
+```
+
+**Result:** Created `retrospective.md` (204 lines) with:
+- **Readiness:** 11 items autonomous (55%), 4 need review (20%), 5 blocked (25%)
+- **Metrics baseline:** 71% success rate (target ≥80%), ~10–15 PRs in week 1
+- **Next steps:** 15 action items (create GitHub Issues, enable workflows, monitor)
+- **Lessons learned:** 10 key decisions with rationale
+
+```powershell
+git tag step-08-retrospective
+```
+
+---
+
+### Push Solution
+
+```powershell
+git push origin solution-final --tags
+```
+
+All 8 tags pushed:
+- `step-01-review-backlog` through `step-08-retrospective`
 
 ## Key Concepts
 
