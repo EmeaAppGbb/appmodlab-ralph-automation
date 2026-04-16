@@ -1,0 +1,35 @@
+================================================================================
+Step 04: Set Up Idle-Watch
+================================================================================
+
+--- Command: gh copilot -- -p "Configure Ralph idle-watch..." ---
+$ gh copilot -- -p "Configure Ralph idle-watch in the .squad/agents/ralph/
+  directory. Create a new file called idle-watch.yml that defines:
+  1) idle detection - auto-start after 6+ hours idle,
+  2) check interval cron '0 */6 * * *',
+  3) notification settings via GitHub issue comments,
+  4) escalation after 24h unattended,
+  5) activity sources (commits, PRs, issues, deployments),
+  6) cool-down period of 2 hours." --allow-all-tools --yolo
+
+● Read config.yml .squad\agents\ralph\config.yml → 177 lines
+● Read escalation.yml .squad\agents\ralph\escalation.yml → 61 lines
+● Read task-handlers.yml .squad\agents\ralph\task-handlers.yml → 659 lines
+● Create idle-watch.yml +193 → .squad\agents\ralph\idle-watch.yml
+
+Created .squad/agents/ralph/idle-watch.yml (192 lines) with:
+
+1. Idle detection — triggers after 6h of inactivity across all sources
+2. Check interval — cron 0 */6 * * * (every 6h UTC)
+3. Notifications — GitHub issue comments with templates showing idle
+   period and planned work summary
+4. Escalation — creates a summary issue after 24h unattended, resets
+   on human interaction
+5. Activity sources — commits, PRs, issues, deployments with specific
+   event types
+6. Cool-down — 2-hour pause after each idle-watch run; skipped cron
+   ticks are logged
+
+Changes: +193 -0
+Requests: 3 Premium (1m 12s)
+Tokens: ⬇ 201.0k • ⬆ 2.9k • 176.1k (cached)

@@ -1,0 +1,192 @@
+---
+# Ralph Idle-Watch Configuration
+# Comprehensive standalone config for autonomous idle-detection and work scheduling.
+# Extends the idle_watch section defined in config.yml with full details on
+# detection, notifications, escalation, and cool-down behaviour.
+#
+# Reference: .squad/agents/ralph/config.yml  (idle_watch section)
+#            .squad/agents/ralph/escalation.yml (escalation process)
+
+# ══════════════════════════════════════════════════
+# 1. Idle Detection
+# ══════════════════════════════════════════════════
+idle_detection:
+  enabled: true
+  threshold_hours: 6            # Trigger when the repo has been idle for 6+ hours
+  description: >
+    Auto-start autonomous processing when the development pipeline shows no
+    activity across any monitored source for at least 6 consecutive hours.
+    Activity on ANY source resets the idle timer.
+
+# ══════════════════════════════════════════════════
+# 2. Check Interval
+# ══════════════════════════════════════════════════
+check_interval:
+  cron: "0 */6 * * *"           # Every 6 hours: 00:00, 06:00, 12:00, 18:00 UTC
+  timezone: "UTC"
+  description: >
+    At each cron tick Ralph evaluates all activity sources. If the most recent
+    activity across every source is older than the threshold, idle-watch fires.
+
+# ══════════════════════════════════════════════════
+# 3. Activity Sources
+# ══════════════════════════════════════════════════
+activity_sources:
+  commits:
+    enabled: true
+    branches:
+      - main
+      - "ralph/*"
+      - "feature/*"
+    description: "Any push or merge commit resets the idle timer."
+
+  pull_requests:
+    enabled: true
+    events:
+      - opened
+      - synchronize                # New commits pushed to a PR
+      - closed
+      - review_submitted
+      - comment_created
+    description: "PR opens, updates, reviews, or comments count as activity."
+
+  issues:
+    enabled: true
+    events:
+      - opened
+      - edited
+      - commented
+      - labeled
+      - closed
+    description: "Issue creation, edits, comments, and label changes count."
+
+  deployments:
+    enabled: true
+    environments:
+      - production
+      - staging
+    events:
+      - created
+      - completed
+      - failed
+    description: "Deployment activity in tracked environments resets idle timer."
+
+# ══════════════════════════════════════════════════
+# 4. On-Idle Actions
+# ══════════════════════════════════════════════════
+on_idle:
+  actions:
+    - scan-open-issues
+    - process-dependabot-alerts
+    - run-stale-pr-check
+  description: >
+    When idle-watch triggers, Ralph executes these actions in order, following
+    the task_handlers and autonomous limits defined in config.yml.
+
+# ══════════════════════════════════════════════════
+# 5. Notifications
+# ══════════════════════════════════════════════════
+notifications:
+  on_trigger:
+    enabled: true
+    channel: github-issue-comment
+    description: >
+      When idle-watch triggers, Ralph posts a GitHub issue comment summarising
+      the detected idle period and the work it plans to execute.
+    template: |
+      ## 🤖 Ralph Idle-Watch Triggered
+
+      **Idle period detected:** {{ idle_hours }} hours (threshold: {{ threshold_hours }}h)
+      **Last activity:** {{ last_activity_timestamp }} ({{ last_activity_source }})
+
+      ### Planned Work
+      {% for action in planned_actions %}
+      - {{ action.name }}: {{ action.summary }}
+      {% endfor %}
+
+      ---
+      _Ralph will begin processing shortly. Reply to this comment to pause or redirect._
+
+  on_completion:
+    enabled: true
+    channel: github-issue-comment
+    description: "Posted after idle-watch finishes all planned actions."
+    template: |
+      ## ✅ Ralph Idle-Watch Complete
+
+      **Duration:** {{ run_duration_minutes }} minutes
+      **Actions completed:** {{ completed_count }}/{{ total_count }}
+
+      {% if failed_actions %}
+      ### ⚠️ Actions with Issues
+      {% for action in failed_actions %}
+      - {{ action.name }}: {{ action.error }}
+      {% endfor %}
+      {% endif %}
+
+      ---
+      _Next idle check eligible after cool-down at {{ next_eligible_time }}._
+
+# ══════════════════════════════════════════════════
+# 6. Escalation Rules
+# ══════════════════════════════════════════════════
+escalation:
+  unattended_threshold_hours: 24
+  description: >
+    If Ralph has been running idle-watch for 24+ hours without any human
+    interaction (comments, issue updates, PR reviews, or commits from
+    non-Ralph authors), Ralph creates a summary issue to flag the situation.
+
+  summary_issue:
+    title: "🔔 Ralph Idle-Watch: 24h unattended — summary & status"
+    labels:
+      - "ralph-idle-watch"
+      - "needs-attention"
+    template: |
+      ## Ralph Idle-Watch — Unattended Summary
+
+      Ralph has been operating autonomously via idle-watch for **{{ unattended_hours }}** hours
+      with no human interaction.
+
+      ### Activity Summary
+      | Metric | Value |
+      |--------|-------|
+      | Idle-watch triggers | {{ trigger_count }} |
+      | Actions executed | {{ actions_executed }} |
+      | PRs created | {{ prs_created }} |
+      | Issues processed | {{ issues_processed }} |
+      | Failures | {{ failure_count }} |
+
+      ### Recent Actions
+      {% for action in recent_actions %}
+      - **{{ action.timestamp }}** — {{ action.name }}: {{ action.result }}
+      {% endfor %}
+
+      ### Pending Decisions
+      {% for decision in pending_decisions %}
+      - {{ decision.description }} (blocked since {{ decision.blocked_since }})
+      {% endfor %}
+
+      ---
+      _Please review and acknowledge. Ralph will continue safe, low-risk tasks
+      but will pause escalation-required work until a human responds._
+
+  on_human_response:
+    action: reset_unattended_timer
+    description: >
+      Any qualifying human interaction (issue comment, PR review, commit)
+      resets the 24-hour unattended timer and closes the summary issue
+      if one was created.
+
+# ══════════════════════════════════════════════════
+# 7. Cool-Down Period
+# ══════════════════════════════════════════════════
+cool_down:
+  duration_hours: 2
+  description: >
+    After an idle-watch run completes, Ralph will not start another
+    idle-watch cycle for at least 2 hours, even if the cron fires.
+    This prevents rapid successive runs when the repo remains idle.
+  behaviour:
+    skip_check: true              # Cron tick during cool-down is silently skipped
+    log_skipped: true             # Log that the check was skipped for auditing
