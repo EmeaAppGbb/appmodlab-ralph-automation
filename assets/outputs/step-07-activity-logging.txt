@@ -1,0 +1,54 @@
+================================================================================
+Step 07: Activity Logging & Monitoring
+================================================================================
+
+--- Command: npx @bradygaster/squad-cli cost ---
+$ npx @bradygaster/squad-cli cost
+
+💰 No token usage data found in orchestration logs.
+   Token tracking is recorded when agents report usage in their responses.
+
+--- Command: npx @bradygaster/squad-cli status ---
+$ npx @bradygaster/squad-cli status
+
+Squad Status
+  Active squad: repo
+  Path:         C:\code\gbb\labs\appmodlab-ralph-automation\.squad
+  Reason:       Found .squad/ in repository tree
+
+--- Command: npx @bradygaster/squad-cli doctor ---
+$ npx @bradygaster/squad-cli doctor
+
+🩺 Squad Doctor
+═══════════════
+Mode: local
+
+✅  .squad/ directory exists — directory present
+✅  config.json valid — parses as JSON, schema OK
+✅  team.md found with ## Members header — file present, header found
+✅  routing.md found — file present
+✅  agents/ directory exists — directory present (2 agents)
+❌  casting/registry.json exists — file not found
+✅  decisions.md exists — file present
+✅  Node.js ≥22.5.0 (node:sqlite) — v24.14.1 — node:sqlite available
+⚠️  vscode-jsonrpc exports field — vscode-jsonrpc not found
+⚠️  copilot-sdk session.js ESM patch — @github/copilot-sdk not found
+
+Summary: 7 passed, 1 failed, 2 warnings
+
+--- Command: gh copilot -- -p "Create monitoring guide..." ---
+$ gh copilot -- -p "Create a monitoring guide for Ralph at
+  .squad/agents/ralph/monitoring.md..." --allow-all-tools --yolo
+
+● Create monitoring.md +305 → .squad\agents\ralph\monitoring.md
+
+Created monitoring guide with:
+1. Quick status commands — squad-cli status and cost
+2. Activity history — how to read history.md
+3. System health — squad-cli doctor usage and result interpretation
+4. Daily checklist — PRs, escalations, CI status, token usage
+5. Weekly review — success rate, task handler tuning, escalation accuracy
+6. Today's doctor output — 7 passed, 1 failed, 2 warnings
+
+Changes: +305 -0
+Requests: 3 Premium (1m 44s)
