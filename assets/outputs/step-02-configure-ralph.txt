@@ -1,0 +1,79 @@
+================================================================================
+Step 02: Initialize Squad & Configure Ralph
+================================================================================
+
+--- Command: npx @bradygaster/squad-cli init ---
+$ npx @bradygaster/squad-cli init
+
+Let's build your team.
+
+✓ .squad\config.json
+✓ .squad\agents\scribe\charter.md
+✓ .squad\agents\scribe\history.md
+✓ .squad\agents\ralph\charter.md
+✓ .squad\identity\now.md
+✓ .squad\identity\wisdom.md
+✓ .squad\ceremonies.md
+✓ .squad\decisions.md
+✓ .squad\team.md
+✓ .squad\routing.md
+✓ .copilot/skills
+✓ .gitattributes
+✓ .gitignore
+✓ .github\agents\squad.agent.md
+✓ .squad\templates
+✓ .github\workflows\squad-heartbeat.yml
+✓ .github\workflows\squad-issue-assign.yml
+✓ .github\workflows\squad-triage.yml
+✓ .github\workflows\sync-squad-labels.yml
+✓ .copilot\mcp-config.json
+✓ .gitignore
+✓ .squad\.first-run
+
+◆ SQUAD
+  📁  Team workspace
+  📋  Skills & ceremonies
+  🔧  Workflows & CI
+  🧠  Identity & wisdom
+  🤖  Copilot agent prompt
+
+Your team is ready. Run squad to start.
+
+--- Command: gh copilot -- -p "Configure Ralph..." ---
+$ gh copilot -- -p "Configure Ralph for autonomous work monitoring on this
+  WeatherLens project. Review the existing .squad/agents/ralph/config.yml
+  and enhance it with: 1) work schedules set to 24/7 UTC, 2) idle-watch
+  with 6-hour threshold and cron check every 6 hours, 3) task handlers for
+  dependency updates (auto-approve), bug fixes (needs review, delegate to
+  hands), documentation (delegate to mouth, auto-approve), performance
+  (needs architecture review, delegate to brain), feature requests (requires
+  product decisions, human approval), and maintenance (auto-approve). 4) Set
+  max concurrent tasks to 3 and max PRs per day to 5." --allow-all-tools --yolo
+
+● Read config.yml .squad\agents\ralph\config.yml → 75 lines
+● Read charter.md .squad\agents\ralph\charter.md → 20 lines
+● Read team.md .squad\team.md → 19 lines
+● Read escalation.yml .squad\agents\ralph\escalation.yml → 61 lines
+● Edit config.yml +120 -18 → .squad\agents\ralph\config.yml
+
+Enhanced Ralph config with:
+| Section           | Key Changes                                                  |
+|-------------------|--------------------------------------------------------------|
+| Schedule          | Explicit mode: "24/7", UTC, holidays field                   |
+| Idle Watch        | 6h threshold, 0 */6 * * * cron, on_idle actions              |
+| Task Handlers     | 6 handlers with descriptions, labels, review_policy, retry   |
+| Limits            | 3 concurrent tasks, 5 PRs/day, 10-min cooldown              |
+| Safety            | ralph/ branch prefix, protected branches, forbidden paths    |
+| Notifications     | PR created, escalation, failure, daily summary events        |
+
+Task handler summary:
+  dependency-update → auto-approve, no review
+  bug-fix           → delegate to hands, review required
+  documentation     → delegate to mouth, auto-approve
+  performance       → delegate to brain, architecture review required
+  feature           → human approval gate before work starts
+  maintenance       → auto-approve
+
+Changes: +120 -18
+Requests: 3 Premium (1m 21s)
+Tokens: ⬇ 230.4k • ⬆ 3.6k • 171.2k (cached)

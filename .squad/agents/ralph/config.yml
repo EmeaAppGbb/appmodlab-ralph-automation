@@ -1,75 +1,177 @@
 ---
-# Ralph Configuration
+# Ralph Configuration — WeatherLens Autonomous Work Monitor
+# Production-ready config for 24/7 unattended operation.
 
-# Work schedule - when Ralph should be active
+# ──────────────────────────────────────────────
+# 1. Work Schedule
+# ──────────────────────────────────────────────
 schedule:
+  mode: "24/7"
   active_hours:
     start: "00:00"
     end: "23:59"
-  days_of_week: [1, 2, 3, 4, 5, 6, 7]  # All days
+  days_of_week: [1, 2, 3, 4, 5, 6, 7]  # Mon–Sun
   timezone: "UTC"
+  holidays: []  # No holidays — always active
 
-# Idle watch settings
+# ──────────────────────────────────────────────
+# 2. Idle Watch
+# ──────────────────────────────────────────────
 idle_watch:
   enabled: true
-  threshold_hours: 6  # Start processing after 6 hours of inactivity
-  check_interval: "0 */6 * * *"  # Check every 6 hours
+  threshold_hours: 6          # Begin autonomous processing after 6 h of inactivity
+  check_interval: "0 */6 * * *"  # Cron: every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
+  on_idle:
+    - scan-open-issues
+    - process-dependabot-alerts
+    - run-stale-pr-check
 
-# Task handlers - how Ralph processes different issue types
+# ──────────────────────────────────────────────
+# 3. Task Handlers
+# ──────────────────────────────────────────────
 task_handlers:
+
   dependency-update:
+    description: "Automated dependency bumps and security patches"
+    labels: ["dependencies", "automated"]
     priority: high
     auto_approve: true
+    review_policy: none        # Auto-approved — no human review needed
     actions:
       - npm audit fix
       - npm update
+      - run-tests
       - create-pr
-    
+    retry:
+      max_attempts: 2
+      backoff_minutes: 15
+
   bug-fix:
-    priority: medium
+    description: "Bug triage, reproduction, and fix — needs human review before merge"
+    labels: ["bug", "needs-review"]
+    priority: high
     auto_approve: false
+    review_policy: required    # Needs code review before merge
+    delegate_to: hands
     actions:
       - analyze-issue
+      - reproduce-bug
       - create-plan
-      - delegate-to: hands
+      - implement-fix
+      - run-tests
+      - create-pr
       - request-review: eyes
-    
+    retry:
+      max_attempts: 2
+      backoff_minutes: 30
+
   documentation:
+    description: "Docs updates — delegated to mouth, auto-approved"
+    labels: ["documentation", "automated"]
     priority: medium
     auto_approve: true
+    review_policy: none
+    delegate_to: mouth
     actions:
-      - delegate-to: mouth
+      - analyze-docs-gap
+      - draft-content
       - create-pr
-    
+    retry:
+      max_attempts: 1
+      backoff_minutes: 10
+
   performance:
+    description: "Performance issues — needs architecture review before implementation"
+    labels: ["performance", "needs-architecture-review"]
     priority: medium
     auto_approve: false
+    review_policy: architecture-review  # Brain must approve the approach
+    delegate_to: brain
     actions:
       - analyze-bottleneck
+      - profile-metrics
       - create-plan
-      - delegate-to: brain
+      - request-architecture-review: brain
+      - implement-optimization
+      - run-benchmarks
+      - create-pr
       - request-review: eyes
-    
+    retry:
+      max_attempts: 2
+      backoff_minutes: 60
+
   feature:
+    description: "Feature requests — requires product decisions and human approval"
+    labels: ["enhancement", "needs-product-decision"]
     priority: low
     auto_approve: false
+    review_policy: human-approval  # Must be approved by a human before work begins
     actions:
+      - analyze-request
       - create-plan
+      - get-human-approval       # Blocks until a human approves the plan
       - delegate-to: brain
-      - get-human-approval
-    
+      - implement-feature
+      - run-tests
+      - create-pr
+      - request-review: eyes
+    retry:
+      max_attempts: 1
+      backoff_minutes: 120
+
   maintenance:
+    description: "Routine housekeeping — linting, formatting, CI config, auto-approved"
+    labels: ["maintenance", "automated"]
     priority: low
     auto_approve: true
+    review_policy: none
     actions:
       - execute-task
+      - run-tests
       - create-pr
+    retry:
+      max_attempts: 2
+      backoff_minutes: 15
 
-# Autonomous operation settings
+# ──────────────────────────────────────────────
+# 4. Autonomous Operation Limits
+# ──────────────────────────────────────────────
 autonomous:
   max_concurrent_tasks: 3
   max_prs_per_day: 5
+  cooldown_between_prs_minutes: 10   # Avoid flooding reviewers
   require_human_approval_for:
     - breaking-changes
     - security-critical
     - database-migrations
+    - api-contract-changes
+
+# ──────────────────────────────────────────────
+# 5. Safety & Guardrails
+# ──────────────────────────────────────────────
+safety:
+  branch_prefix: "ralph/"          # All Ralph branches start with ralph/
+  protected_branches:
+    - main
+    - production
+    - release/*
+  forbidden_paths:                  # Ralph must never modify these
+    - ".github/workflows/"
+    - ".squad/config.json"
+    - "*.secret"
+    - "*.env"
+  require_passing_ci: true          # PR creation blocked if CI fails
+  max_files_per_pr: 25              # Escalate if a change touches too many files
+  max_lines_changed_per_pr: 500     # Escalate for large diffs
+
+# ──────────────────────────────────────────────
+# 6. Notifications
+# ──────────────────────────────────────────────
+notifications:
+  on_pr_created: true
+  on_escalation: true
+  on_task_failure: true
+  on_daily_summary: true
+  channels:
+    - github-issues
+    - github-comments
