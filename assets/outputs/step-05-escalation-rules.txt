@@ -1,0 +1,39 @@
+================================================================================
+Step 05: Set Up Escalation Rules
+================================================================================
+
+--- Command: gh copilot -- -p "Enhance the Ralph escalation rules..." ---
+$ gh copilot -- -p "Enhance the Ralph escalation rules at
+  .squad/agents/ralph/escalation.yml. Convert from markdown to proper YAML
+  configuration with severity levels, WeatherLens-specific triggers,
+  notification channels, response timeouts, and auto-actions."
+  --allow-all-tools --yolo
+
+● Read escalation.yml .squad\agents\ralph\escalation.yml → 61 lines
+● Read config.yml .squad\agents\ralph\config.yml → 177 lines
+● Edit escalation.yml +193 -48 → .squad\agents\ralph\escalation.yml
+● Validate YAML → Valid
+
+Converted escalation rules from markdown to structured YAML with:
+
+- 4 severity levels with specific, parseable trigger conditions
+  (file path matching for DB changes, retry count thresholds)
+- WeatherLens-specific mappings:
+  DB/API changes → critical
+  Security vulnerabilities → high
+  Build failures after 2 retries → high
+  Ambiguous requirements/large diffs → medium
+  Feature requests → low
+- Notification channels:
+  critical → issue + @team mention
+  high → issue + assignee
+  medium → PR comment
+  low → label only
+- Response timeouts: 1h / 4h / 24h / 72h
+- 3 ordered timeout auto-actions:
+  reminder → pause work → escalate to next level
+- Backlog cross-reference mapping #8, #13-17, #19 to triggers
+
+Changes: +193 -48
+Requests: 3 Premium (1m 52s)
+Tokens: ⬇ 301.6k • ⬆ 4.4k • 273.7k (cached)

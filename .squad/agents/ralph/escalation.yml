@@ -1,61 +1,206 @@
-# Ralph Escalation Rules
+---
+# Ralph Escalation Rules — WeatherLens
+# Programmatic escalation config for autonomous operation.
+# Referenced by: config.yml (safety & notifications sections)
 
-## Escalation Triggers
+# ──────────────────────────────────────────────
+# 1. Severity Levels & Triggers
+# ──────────────────────────────────────────────
+severity_levels:
 
-Ralph will escalate to humans when:
+  critical:
+    description: "Immediate human intervention required — work is blocked or risk is severe"
+    triggers:
+      - id: database-schema-change
+        condition: "PR modifies files matching 'backend/migrations/**' or 'prisma/schema.prisma'"
+        reason: "Database changes can cause data loss or downtime"
+        backlog_refs: []
+      - id: api-breaking-change
+        condition: "PR removes or renames a public API endpoint, changes response schema, or bumps major version"
+        reason: "Breaking changes affect downstream consumers"
+        backlog_refs: []
+      - id: multi-service-dependency
+        condition: "PR modifies contracts shared across more than one service"
+        reason: "Cross-service changes require coordinated deployment"
+        backlog_refs: []
 
-1. **High-Risk Changes**
-   - Database schema modifications
-   - Breaking API changes
-   - Security-critical updates
-   - Multi-service dependencies
+  high:
+    description: "Significant risk — human review required before merge"
+    triggers:
+      - id: security-vulnerability
+        condition: "npm audit reports HIGH or CRITICAL severity, or PR touches auth/crypto/session code"
+        reason: "Security issues must be validated by a human"
+        backlog_refs: []
+      - id: build-failure-after-retries
+        condition: "CI build fails after 2 consecutive retry attempts"
+        reason: "Persistent build failures indicate a deeper issue Ralph cannot resolve"
+        backlog_refs:
+          - "#8"   # Cache invalidation bug — flaky builds may stem from stale cache
+      - id: test-failure-undiagnosable
+        condition: "Test suite fails and Ralph cannot identify root cause within 2 analysis cycles"
+        reason: "Opaque test failures need human debugging"
+        backlog_refs:
+          - "#19"  # Improve test coverage — gaps make diagnosis harder
+      - id: merge-conflict-complex
+        condition: "Merge conflict spans more than 3 files or involves protected paths"
+        reason: "Complex conflicts require human judgment on intent"
+        backlog_refs: []
 
-2. **Task Failures**
-   - Build failures after 2 attempts
-   - Test failures that Ralph cannot diagnose
-   - Merge conflicts requiring human judgment
+  medium:
+    description: "Needs clarification or review — work can continue on other tasks"
+    triggers:
+      - id: ambiguous-requirements
+        condition: "Issue description has fewer than 2 acceptance criteria or contains TBD/TODO placeholders"
+        reason: "Ambiguity leads to rework; better to clarify upfront"
+        backlog_refs:
+          - "#15"  # Dark mode toggle — scope needs design input
+          - "#16"  # Multi-language support — requires product decisions
+          - "#17"  # Offline mode with service workers — architecture TBD
+      - id: large-diff
+        condition: "PR diff exceeds 500 lines changed"
+        reason: "Large diffs are hard to review and carry higher risk"
+        backlog_refs:
+          - "#13"  # Reduce API response time — optimisation may touch many files
+          - "#14"  # Optimize frontend bundle size — broad refactor expected
+      - id: multiple-valid-approaches
+        condition: "Ralph identifies 2+ viable solutions with no clear winner"
+        reason: "Architectural choices should involve human trade-off analysis"
+        backlog_refs:
+          - "#13"  # Reduce API response time — caching vs query optimisation
+      - id: insufficient-context
+        condition: "Issue lacks reproduction steps for bugs or user stories for features"
+        reason: "Missing context leads to incorrect implementations"
+        backlog_refs: []
 
-3. **Uncertainty**
-   - Ambiguous issue descriptions
-   - Multiple valid solution approaches
-   - Insufficient context to proceed
+  low:
+    description: "Informational — no immediate action needed"
+    triggers:
+      - id: feature-needs-product-input
+        condition: "Issue is labeled 'enhancement' and lacks product-owner approval"
+        reason: "Feature work should be product-driven, not dev-driven"
+        backlog_refs:
+          - "#15"  # Dark mode toggle
+          - "#16"  # Multi-language support
+          - "#17"  # Offline mode with service workers
+      - id: resource-limit-approaching
+        condition: "Daily PR count >= 4 or concurrent tasks >= 2"
+        reason: "Early warning before hard limits trigger a full stop"
+        backlog_refs: []
+      - id: ci-quota-warning
+        condition: "CI minutes consumed exceed 80% of monthly allocation"
+        reason: "Avoids surprise CI outages at end of billing cycle"
+        backlog_refs: []
 
-4. **Resource Limits**
-   - Daily PR limit reached (5 PRs)
-   - Concurrent task limit reached (3 tasks)
-   - CI/CD quota approaching limit
+# ──────────────────────────────────────────────
+# 2. Notification Channels
+# ──────────────────────────────────────────────
+notifications:
+  critical:
+    actions:
+      - type: github-issue
+        template: "incident"
+        labels: ["escalation", "critical", "ralph-blocked"]
+      - type: team-mention
+        mention: "@EmeaAppGbb/weatherlens-team"
+        location: issue     # Mention inside the created issue
 
-## Escalation Process
+  high:
+    actions:
+      - type: github-issue
+        template: "escalation"
+        labels: ["escalation", "high", "needs-review"]
+      - type: assignee
+        assign_to: "tech-lead"   # Resolved via CODEOWNERS or team config
 
-```mermaid
-graph TD
-    A[Ralph detects escalation trigger] --> B{Severity Level}
-    B -->|Critical| C[Create incident issue]
-    B -->|High| D[Create escalation issue]
-    B -->|Medium| E[Add comment to existing issue]
-    
-    C --> F[Notify on-call team]
-    D --> G[Notify tech lead]
-    E --> H[Tag product owner]
-    
-    F --> I[Wait for human intervention]
-    G --> I
-    H --> I
-```
+  medium:
+    actions:
+      - type: pr-comment
+        template: "clarification-needed"
+        labels: ["needs-clarification"]
 
-## Notification Channels
+  low:
+    actions:
+      - type: label-only
+        labels: ["needs-product-input"]
 
-- **Critical:** PagerDuty alert + Slack @channel
-- **High:** GitHub issue + Slack mention
-- **Medium:** GitHub comment + Email digest
+# ──────────────────────────────────────────────
+# 3. Response Timeouts
+# ──────────────────────────────────────────────
+timeouts:
+  critical:
+    response_expected: "1h"
+    description: "Human must acknowledge within 1 hour"
+  high:
+    response_expected: "4h"
+    description: "Human must respond within 4 hours"
+  medium:
+    response_expected: "24h"
+    description: "Human must respond within 1 business day"
+  low:
+    response_expected: "72h"
+    description: "Human should respond within 3 business days"
 
-## Human Response Expected
+# ──────────────────────────────────────────────
+# 4. Auto-Actions on Timeout
+# ──────────────────────────────────────────────
+timeout_actions:
+  # Actions are executed in order when the response timeout is exceeded.
+  - order: 1
+    action: send-reminder
+    description: "Post a follow-up comment on the issue or PR tagging the assignee"
+    delay_after_timeout: "0m"
 
-- **Critical:** Within 1 hour
-- **High:** Within 4 hours
-- **Medium:** Within 24 hours
+  - order: 2
+    action: pause-related-work
+    description: "Pause all Ralph tasks that depend on the escalated item"
+    delay_after_timeout: "0m"
 
-If no response within expected timeframe, Ralph will:
-1. Send reminder notification
-2. Pause autonomous work on related tasks
-3. Continue with lower-priority, safe tasks
+  - order: 3
+    action: escalate-to-next-level
+    description: "Bump severity one level up and re-notify via the higher channel"
+    delay_after_timeout: "30m"
+    rules:
+      low_becomes: medium
+      medium_becomes: high
+      high_becomes: critical
+      critical_becomes: critical  # Already at max — repeat notification
+
+# ──────────────────────────────────────────────
+# 5. Backlog Cross-Reference
+# ──────────────────────────────────────────────
+# Maps backlog items to the escalation triggers they are most likely to activate.
+backlog_escalation_map:
+  "#8":
+    title: "Cache invalidation bug"
+    likely_triggers: ["build-failure-after-retries"]
+    expected_severity: high
+
+  "#13":
+    title: "Reduce API response time"
+    likely_triggers: ["large-diff", "multiple-valid-approaches"]
+    expected_severity: medium
+
+  "#14":
+    title: "Optimize frontend bundle size"
+    likely_triggers: ["large-diff"]
+    expected_severity: medium
+
+  "#15":
+    title: "Dark mode toggle"
+    likely_triggers: ["ambiguous-requirements", "feature-needs-product-input"]
+    expected_severity: medium
+
+  "#16":
+    title: "Multi-language support"
+    likely_triggers: ["ambiguous-requirements", "feature-needs-product-input"]
+    expected_severity: medium
+
+  "#17":
+    title: "Offline mode with service workers"
+    likely_triggers: ["ambiguous-requirements", "feature-needs-product-input"]
+    expected_severity: medium
+
+  "#19":
+    title: "Improve test coverage"
+    likely_triggers: ["test-failure-undiagnosable"]
+    expected_severity: high
