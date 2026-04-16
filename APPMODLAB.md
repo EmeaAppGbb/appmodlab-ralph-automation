@@ -44,6 +44,24 @@ By completing this lab, you will:
 
 The WeatherLens project is a React + Node.js weather dashboard with a healthy backlog of 20+ issues. Ralph is configured to autonomously process these items based on task type, priority, and risk level.
 
+The WeatherLens dashboard uses a purple gradient UI, displaying current weather conditions (temperature, humidity, wind speed, pressure) and a 5-day forecast for any searched city. The backend serves mock data by default and can optionally connect to the OpenWeatherMap API.
+
+Here is the homepage showing the default city (London) with current conditions and forecast:
+
+![Homepage showing London weather](assets/screenshots/01-homepage.png)
+
+The search feature works across multiple cities. Below are examples for New York, Tokyo, and Paris:
+
+![Weather data for New York](assets/screenshots/02-new-york-weather.png)
+
+![Weather data for Tokyo](assets/screenshots/03-tokyo-weather.png)
+
+![Weather data for Paris](assets/screenshots/04-paris-weather.png)
+
+The backend exposes a health endpoint confirming API server status:
+
+![Backend API health check response](assets/screenshots/05-api-health.png)
+
 ### Ralph Configuration Components
 
 1. **Work Schedules** - When Ralph should be active
@@ -51,6 +69,8 @@ The WeatherLens project is a React + Node.js weather dashboard with a healthy ba
 3. **Task Handlers** - How to process each issue type
 4. **Escalation Rules** - When to notify humans
 5. **Activity Logging** - Track Ralph's autonomous work
+
+---
 
 ## Lab Instructions
 
