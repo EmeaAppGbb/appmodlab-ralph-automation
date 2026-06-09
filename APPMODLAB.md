@@ -11,7 +11,7 @@ modernizationTools: []
 agenticTools: ["SQUAD"]
 tags: ["ralph", "automation", "backlog-management", "autonomous-agent", "weather-dashboard"]
 extensions: ["github.copilot"]
-thumbnail: ""
+thumbnail: "https://raw.githubusercontent.com/EmeaAppGbb/appmodlab-ralph-automation/main/assets/thumbnail-gpt-image.png"
 video: ""
 version: "1.0.0"
 ---
